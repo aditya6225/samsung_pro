@@ -1,0 +1,77 @@
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+
+const ll NEG_INF = -1e15;
+ll dp[100001][11][11];
+
+// Function to convert character to DP index
+int charToIndex(char ch) {
+    if (ch == '@') return 10;
+    return ch - '0';
+}
+
+// Recursive DP function to find max length
+ll findMaxLength(ll index, char startChar, char endChar, vector<string> &words) {
+    // Base Case: If all words are processed
+    if (index == words.size()) {
+        if (startChar == endChar) {
+            return 0;  // Valid sequence
+        } else {
+            return NEG_INF;  // Invalid sequence
+        }
+    }
+
+    int startIdx = charToIndex(startChar);
+    int endIdx = charToIndex(endChar);
+
+    // Memoization check
+    if (dp[index][startIdx][endIdx] != -1) {
+        return dp[index][startIdx][endIdx];
+    }
+
+    ll maxLength = findMaxLength(index + 1, startChar, endChar, words);  // Skip current word
+
+    // Check if we can merge the current word
+    bool canMerge = (endChar == words[index][0] || endChar == '@');
+    if (canMerge) {
+        char newStart = (startChar == '@') ? words[index][0] : startChar;
+        char newEnd = words[index].back();
+        ll mergedLength = words[index].size() + findMaxLength(index + 1, newStart, newEnd, words);
+        
+        maxLength = max(maxLength, mergedLength);
+    }
+
+    // Store and return the computed value
+    dp[index][startIdx][endIdx] = maxLength;
+    return maxLength;
+}
+
+void solve() {
+    ll n;
+    cin >> n;
+    vector<string> words(n);
+    
+    for (ll i = 0; i < n; i++) {
+        cin >> words[i];
+    }
+
+    memset(dp, -1, sizeof(dp));
+    ll maxLength = 0;
+
+    // Try starting from each word
+    for (ll i = 0; i < n; i++) {
+        maxLength = max(maxLength, findMaxLength(i, '@', '@', words));
+    }
+
+    // Ensure non-negative output
+    cout << (maxLength <= 0 ? 0 : maxLength) << "\n";
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    solve();
+    return 0;
+}
