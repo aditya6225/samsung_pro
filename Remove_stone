@@ -1,0 +1,29 @@
+#include <bits/stdc++.h> using namespace std;
+
+const int MOD = 1e9 + 7; vector<int> a, b, c; vector<vector<int>> dp; int n;
+
+int solve(int position, int state) { if (position == n - 1) { return (state == 0) ? a[position] : b[position]; }
+
+if (dp[state][position] != -1) return dp[state][position];
+
+int res = 0;
+if (state == 0) {
+    res = max(solve(position + 1, 1) + a[position], solve(position + 1, 0) + b[position]);
+} else {
+    res = max(solve(position + 1, 1) + b[position], solve(position + 1, 0) + c[position]);
+}
+
+return dp[state][position] = res;
+
+}
+
+int main() { cin >> n; a.resize(n); b.resize(n); c.resize(n); dp.assign(2, vector<int>(n, -1));
+
+for (int i = 0; i < n; i++) cin >> a[i];
+for (int i = 0; i < n; i++) cin >> b[i];
+for (int i = 0; i < n; i++) cin >> c[i];
+
+cout << solve(0, 0) << endl;
+return 0;
+
+} 
