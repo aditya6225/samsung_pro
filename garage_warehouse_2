@@ -1,0 +1,142 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define pii pair<int, int>
+#define INF 1e9
+
+int h, w, C;
+vector<string> city;
+vector<pii> warehouses;
+pii garage, airport;
+
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, -1, 0, 1};
+
+bool is_valid(int x, int y)
+{
+    return x >= 0 && y >= 0 && x < h && y < w && city[x][y] != '1';
+}
+
+// BFS to get minimum distance from a point to every cell
+vector<vector<int>> bfs(pii start)
+{
+    vector<vector<int>> dist(h, vector<int>(w, INF));
+    queue<pii> q;
+    dist[start.first][start.second] = 0;
+    q.push(start);
+    while (!q.empty())
+    {
+        auto [x, y] = q.front();
+        q.pop();
+        for (int d = 0; d < 4; d++)
+        {
+            int nx = x + dx[d], ny = y + dy[d];
+            if (is_valid(nx, ny) && dist[nx][ny] == INF)
+            {
+                dist[nx][ny] = dist[x][y] + 1;
+                q.push({nx, ny});
+            }
+        }
+    }
+    return dist;
+}
+
+int solve()
+{
+    int n = warehouses.size();
+    vector<vector<int>> distG = bfs(garage);
+    vector<vector<int>> distA = bfs(airport);
+    vector<vector<int>> distW(n, vector<int>(n, INF));
+
+    // Distance from each warehouse to others
+    for (int i = 0; i < n; i++)
+    {
+        auto d = bfs(warehouses[i]);
+        for (int j = 0; j < n; j++)
+        {
+            distW[i][j] = d[warehouses[j].first][warehouses[j].second];
+        }
+    }
+
+    // Precompute distances from garage to warehouses and warehouses to airport
+    vector<int> GtoW(n), WtoA(n);
+    for (int i = 0; i < n; i++)
+    {
+        GtoW[i] = distG[warehouses[i].first][warehouses[i].second];
+        WtoA[i] = distA[warehouses[i].first][warehouses[i].second];
+    }
+
+    int maxGoods = 0;
+    vector<vector<int>> dp(1 << n, vector<int>(n, INF));
+
+    // Base case
+    for (int i = 0; i < n; i++)
+    {
+        if (GtoW[i] < INF)
+            dp[1 << i][i] = GtoW[i];
+    }
+
+    // Bitmask DP
+    for (int mask = 1; mask < (1 << n); mask++)
+    {
+        for (int last = 0; last < n; last++)
+        {
+            if (!(mask & (1 << last)) || dp[mask][last] == INF)
+                continue;
+            for (int next = 0; next < n; next++)
+            {
+                int temp = __builtin_popcount(mask);
+                if (mask & (1 << next))
+                    continue;
+                if (distW[last][next] < INF)
+                {
+                    int newMask = mask | (1 << next);
+                    dp[newMask][next] = min(dp[newMask][next], dp[mask][last] + distW[last][next] * (1 + temp));
+                }
+            }
+        }
+    }
+
+    // Final step: from each DP state go to airport
+    for (int mask = 1; mask < (1 << n); mask++)
+    {
+        for (int last = 0; last < n; last++)
+        {
+            if (!(mask & (1 << last)) || dp[mask][last] == INF)
+                continue;
+            int goods = __builtin_popcount(mask);
+            int totalCost = dp[mask][last] + WtoA[last] * (1 + goods);
+            if (totalCost <= C)
+            {
+                maxGoods = max(maxGoods, goods);
+            }
+        }
+    }
+    return maxGoods;
+}
+
+int main()
+{
+    int T;
+    cin >> T;
+    while (T--)
+    {
+        cin >> h >> w >> C;
+        city.resize(h);
+        warehouses.clear();
+        for (int i = 0; i < h; i++)
+        {
+            cin >> city[i];
+            for (int j = 0; j < w; j++)
+            {
+                if (city[i][j] == '2')
+                    garage = {i, j};
+                else if (city[i][j] == '3')
+                    warehouses.push_back({i, j});
+                else if (city[i][j] == '4')
+                    airport = {i, j};
+            }
+        }
+        cout << solve() << endl;
+    }
+    return 0;
+}
